@@ -45,3 +45,23 @@ RegisterNetEvent('player:setJob', function(jobData)
 
     currentJob = newJob
 end)
+
+RegisterNetEvent("qbx_policegearcloth:debugSavedAppearance", function(savedAppearance)
+    if savedAppearance then
+        lib.notify({
+            title = "Civilian Clothing Saved",
+            description = "Previous outfit has been stored.",
+            type = "success"
+        })
+
+        -- Output the actual saved appearance to your client console
+        print("[qbx_policegearcloth] Saved Appearance:")
+        print(json.encode(savedAppearance, { indent = true }))
+    else
+        lib.notify({
+            title = "Save Failed",
+            description = "Appearance data was not captured.",
+            type = "error"
+        })
+    end
+end)
