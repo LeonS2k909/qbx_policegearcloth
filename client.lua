@@ -3,17 +3,15 @@ local prevAppearance = nil
 RegisterNetEvent('qbx_job_items:applyPoliceOutfit', function()
     Wait(500)
 
-    -- Save current civilian appearance before applying uniform
     local ped = PlayerPedId()
     prevAppearance = exports['illenium-appearance']:getPedAppearance(ped)
 
     if prevAppearance then
-        print("[Client] Civilian appearance saved.")
+        print("[Client] Civilian appearance captured.")
     else
         print("[Client] Failed to capture civilian appearance.")
     end
 
-    -- Apply police uniform
     local success = exports['illenium-appearance']:setOutfit({
         pants = { item = 24, texture = 0 },
         arms = { item = 20, texture = 0 },
@@ -34,13 +32,50 @@ RegisterNetEvent('qbx_job_items:applyPoliceOutfit', function()
             description = "Police clothing assigned.",
             type = "success"
         })
-        print("[Client] Police outfit applied.")
+        print("[Client] Police uniform applied.")
     else
         lib.notify({
             title = "Uniform Failed",
             description = "Could not apply police outfit.",
             type = "error"
         })
-        print("[Client] Outfit application failed.")
+        print("[Client] Failed to apply police uniform.")
     end
 end)
+
+-- 📦 Manual command to check what was saved
+RegisterCommand("checkSavedAppearance", function()
+    if prevAppearance then
+        lib.notify({
+            title = "Appearance Saved",
+            description = "Civilian clothing data is available.",
+            type = "info"
+        })
+        print("[Client] Civilian Appearance Structure:")
+        print(json.encode(prevAppearance, { indent = true }))
+    else
+        lib.notify({
+            title = "No Data",
+            description = "No civilian outfit captured yet.",
+            type = "error"
+        })
+        print("[Client] No civilian appearance available.")
+    end
+end, false)
+
+RegisterNetEvent('player:setJob', function(jobData)
+    local newJob = jobData.name
+    local grade = jobData.grade
+
+    if newJob == "unemployed" and grade == 0 and prevAppearance then
+        exports['illenium-appearance']:setPlayerAppearance(prevAppearance)
+        lib.notify({
+            title = "Back to Civilian",
+            description = "Restored saved clothing from earlier.",
+            type = "info"
+        })
+        print("[Client] Civilian appearance restored.")
+        print(json.encode(prevAppearance, { indent = true }))
+    end
+end)
+
