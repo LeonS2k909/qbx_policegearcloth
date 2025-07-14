@@ -1,3 +1,5 @@
+print("test")
+
 local prevAppearance = nil
 local currentJob = nil
 
