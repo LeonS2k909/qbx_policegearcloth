@@ -5,12 +5,18 @@ local function storeCivilianAppearance()
     local appearance = exports['illenium-appearance']:getPedAppearance(ped)
     if appearance then
         TriggerServerEvent("qbx_policegearcloth:storeCivilianAppearance", appearance)
+        print("[Client] Civilian appearance captured and sent to server.")
+    else
+        print("[Client] Failed to capture civilian appearance.")
     end
 end
 
 RegisterNetEvent('qbx_job_items:applyPoliceOutfit', function()
     Wait(500)
+
     storeCivilianAppearance()
+
+    Wait(250) -- Ensure async gap before applying new outfit
 
     local success = exports['illenium-appearance']:setOutfit({
         pants = { item = 24, texture = 0 },
@@ -26,15 +32,13 @@ RegisterNetEvent('qbx_job_items:applyPoliceOutfit', function()
         mask = { item = 0, texture = 0 }
     })
 
-    lib.notify(success and {
-        title = "Uniform Applied",
-        description = "Police clothing assigned.",
-        type = "success"
-    } or {
-        title = "Uniform Failed",
-        description = "Could not apply police outfit.",
-        type = "error"
-    })
+    if success then
+        lib.notify({ title = "Uniform Applied", description = "Police clothing assigned.", type = "success" })
+        print("[Client] Police outfit applied successfully.")
+    else
+        lib.notify({ title = "Uniform Failed", description = "Could not apply police outfit.", type = "error" })
+        print("[Client] Police outfit application failed.")
+    end
 end)
 
 RegisterNetEvent('player:setJob', function(jobData)
