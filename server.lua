@@ -19,3 +19,4 @@ lib.callback.register('qbx_policegearcloth:getCivilianAppearance', function(sour
     end
     return data
 end)
+
