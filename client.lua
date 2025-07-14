@@ -1,4 +1,3 @@
-local prevAppearance = nil
 local currentJob = nil
 
 local policeOutfit = {
@@ -26,20 +25,4 @@ RegisterNetEvent('qbx_job_items:applyPoliceOutfit', function()
     else
         lib.notify({ title = "Uniform Failed", description = "Could not apply police outfit.", type = "error" })
     end
-end)
-
-RegisterNetEvent('player:setJob', function(jobData)
-    local newJob = jobData.name
-    local grade = jobData.grade
-
-    if newJob == "unemployed" and grade == 0 and currentJob == "police" then
-        if prevAppearance then
-            exports['illenium-appearance']:setPlayerAppearance(prevAppearance)
-            lib.notify({ title = "Back to Civilian", description = "Restored your previous outfit.", type = "info" })
-        else
-            lib.notify({ title = "Outfit Not Saved", description = "No civilian clothing stored to restore.", type = "error" })
-        end
-    end
-
-    currentJob = newJob
 end)
