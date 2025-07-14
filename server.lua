@@ -1,3 +1,6 @@
+local civilianOutfits = {}
+
+
 local QBCore = exports['qb-core']:GetCoreObject()
 
 RegisterNetEvent('QBCore:Server:OnJobUpdate', function(source, newJob, oldJob)
@@ -30,3 +33,14 @@ RegisterNetEvent('QBCore:Server:OnJobUpdate', function(source, newJob, oldJob)
         TriggerClientEvent('qbx_job_items:applyPoliceOutfit', source)
     end
 end)
+
+RegisterServerEvent("qbx_policegearcloth:storeCivilianAppearance")
+AddEventHandler("qbx_policegearcloth:storeCivilianAppearance", function(appearance)
+    local src = source
+    civilianOutfits[src] = appearance
+end)
+
+lib.callback.register('qbx_policegearcloth:getCivilianAppearance', function(source)
+    return civilianOutfits[source]
+end)
+
