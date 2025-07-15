@@ -1,49 +1,55 @@
+-- server.lua
+-- QBX Police Gear Cloth – Server Side
+
+-- Debug helper
 local function DebugPrint(...)
     if Config.DebugMode then
         print('[qbx_policegearcloth]', ...)
     end
 end
 
--- Event to handle police gear assignment
-RegisterNetEvent('qbx_policegearcloth:server:GivePoliceGear', function(source))
-    DebugPrint('Giving police gear to:', source)
-    
+-- Give police items
+RegisterNetEvent('qbx_policegearcloth:server:GivePoliceGear')
+AddEventHandler('qbx_policegearcloth:server:GivePoliceGear', function(source)
+    DebugPrint('GivePoliceGear to:', source)
     for _, item in ipairs(Config.PoliceItems) do
-        local itemCount = exports.ox_inventory:Search(source, 'count', item.name)
-        
-        if not itemCount or itemCount == 0 then
-            local success = exports.ox_inventory:AddItem(source, item.name, item.count)
-            DebugPrint(success and ('Gave %s x%d'):format(item.name, item.count) or 
-                        ('Failed to give %s'):format(item.name))
-        else
-            DebugPrint(('Player already has %s (count: %d)'):format(item.name, itemCount))
+        local count = exports.ox_inventory:Search(source, 'count', item.name)
+        if not count or count == 0 then
+            exports.ox_inventory:AddItem(source, item.name, item.count)
+            DebugPrint('Added', item.name, 'x'..item.count)
         end
     end
-end
-
--- Handle job changes
-RegisterNetEvent('QBCore:Server:OnJobUpdate', function(source, newJob, oldJob)
-    if not source or newJob.name ~= Config.PoliceJobName then return end
-    DebugPrint(('Player %s became police'):format(source))
-
-    -- 1. Save civilian clothes
-    TriggerClientEvent('qbx_policegearcloth:client:SaveCivilianAppearance', source)
-    
-    -- 2. Apply police outfit
-    Citizen.SetTimeout(1000, function()
-        DebugPrint('Applying police outfit for:', source)
-        TriggerClientEvent('qbx_policegearcloth:client:ApplyPoliceOutfit', source)
-        
-        -- 3. Give police items
-        Citizen.SetTimeout(500, function()
-            TriggerEvent('qbx_policegearcloth:server:GivePoliceGear', source)
-        end)
-    end)
 end)
 
--- Debug command to trigger police outfit
+-- Handle job updates (police join & leave)
+RegisterNetEvent('QBCore:Server:OnJobUpdate')
+AddEventHandler('QBCore:Server:OnJobUpdate', function(source, newJob, oldJob)
+    if not source then return end
+
+    -- Joined police
+    if newJob.name == Config.PoliceJobName then
+        DebugPrint('Player', source, 'became police')
+        TriggerClientEvent('qbx_policegearcloth:client:SaveCivilianAppearance', source)
+
+        Citizen.SetTimeout(800, function()
+            TriggerClientEvent('qbx_policegearcloth:client:ApplyPoliceOutfit', source)
+            Citizen.SetTimeout(400, function()
+                TriggerEvent('qbx_policegearcloth:server:GivePoliceGear', source)
+            end)
+        end)
+    end
+
+    -- Left police (goes to unemployed or another job)
+    if oldJob.name == Config.PoliceJobName then
+        DebugPrint('Player', source, 'left police')
+        Citizen.SetTimeout(800, function()
+            TriggerClientEvent('qbx_policegearcloth:client:RestoreCivilianAppearance', source)
+        end)
+    end
+end)
+
+-- Debug command
 RegisterCommand('forcepoliceoutfit', function(source)
     if source == 0 then return end
-    DebugPrint('Forcing police outfit for:', source)
     TriggerClientEvent('qbx_policegearcloth:client:ApplyPoliceOutfit', source)
 end, true)
