@@ -7,11 +7,11 @@ version '1.1.1'
 
 shared_scripts {
     '@ox_lib/init.lua',
-    '@qbx_core/modules/lib.lua'  -- ✅ Proper path for Qbox utility functions
+    '@qbx_core/modules/lib.lua',
+    'config.lua'  -- Config will be loaded first
 }
 
 server_scripts {
-    'config.lua',
     'server.lua'
 }
 

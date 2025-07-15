@@ -1,81 +1,102 @@
-local prevAppearance = nil
+local savedCivilianAppearance = nil
+local isApplyingOutfit = false
 
-RegisterNetEvent('qbx_job_items:applyPoliceOutfit', function()
-    Wait(500)
+-- Component ID mapping for manual application
+local COMPONENT_IDS = {
+    ["mask"] = 1,
+    ["arms"] = 3,
+    ["pants"] = 4,
+    ["bag"] = 5,
+    ["shoes"] = 6,
+    ["accessory"] = 7,
+    ["t-shirt"] = 8,
+    ["vest"] = 9,
+    ["torso2"] = 11,
+    ["hat"] = 0,  -- Prop ID
+    ["glass"] = 1, -- Prop ID
+}
 
-    local ped = PlayerPedId()
-    prevAppearance = exports['illenium-appearance']:getPedAppearance(ped)
-
-    if prevAppearance then
-        print("[Client] Civilian appearance captured.")
-    else
-        print("[Client] Failed to capture civilian appearance.")
+-- Debug print function
+local function DebugPrint(...)
+    if Config and Config.DebugMode then
+        print('[qbx_policegearcloth]', ...)
     end
+end
 
-    local success = exports['illenium-appearance']:setOutfit({
-        pants = { item = 24, texture = 0 },
-        arms = { item = 20, texture = 0 },
-        ["t-shirt"] = { item = 58, texture = 0 },
-        vest = { item = 0, texture = 0 },
-        torso2 = { item = 317, texture = 0 },
-        shoes = { item = 51, texture = 0 },
-        accessory = { item = 0, texture = 0 },
-        bag = { item = 0, texture = 0 },
-        hat = { item = -1, texture = -1 },
-        glass = { item = 0, texture = 0 },
-        mask = { item = 0, texture = 0 }
-    })
+-- Save civilian appearance
+RegisterNetEvent('qbx_policegearcloth:client:SaveCivilianAppearance', function())
+    savedCivilianAppearance = exports['illenium-appearance']:getPedAppearance(PlayerPedId())
+    DebugPrint(savedCivilianAppearance and 'Civilian clothes saved' or 'Failed to save civilian clothes')
+end
 
+-- Apply police outfit with guaranteed success
+RegisterNetEvent('qbx_policegearcloth:client:ApplyPoliceOutfit', function())
+    if isApplyingOutfit then return end
+    isApplyingOutfit = true
+    DebugPrint('Starting police outfit application')
+    
+    local ped = PlayerPedId()
+    local outfit = Config.PoliceOutfit.outfitData
+    
+    -- Method 1: Try appearance system
+    local success = false
+    if exports['illenium-appearance'] then
+        success = exports['illenium-appearance']:setOutfit(outfit)
+        DebugPrint(success and 'Appearance system success' or 'Appearance system failed')
+    end
+    
+    -- Method 2: Manual component application
+    if not success then
+        DebugPrint('Applying components manually')
+        for component, data in pairs(outfit) do
+            if COMPONENT_IDS[component] then
+                if component == "hat" or component == "glass" then
+                    SetPedPropIndex(ped, COMPONENT_IDS[component], data.item, data.texture, true)
+                else
+                    SetPedComponentVariation(ped, COMPONENT_IDS[component], data.item, data.texture, 0)
+                end
+                DebugPrint('Applied:', component, data.item, data.texture)
+            end
+            Citizen.Wait(50)
+        end
+        success = true
+    end
+    
+    -- Method 3: Force individual components as last resort
+    if not success then
+        DebugPrint('Force-setting all components')
+        SetPedComponentVariation(ped, COMPONENT_IDS["pants"], outfit.pants.item, outfit.pants.texture, 0)
+        SetPedComponentVariation(ped, COMPONENT_IDS["arms"], outfit.arms.item, outfit.arms.texture, 0)
+        SetPedComponentVariation(ped, COMPONENT_IDS["t-shirt"], outfit["t-shirt"].item, outfit["t-shirt"].texture, 0)
+        SetPedComponentVariation(ped, COMPONENT_IDS["torso2"], outfit.torso2.item, outfit.torso2.texture, 0)
+        SetPedComponentVariation(ped, COMPONENT_IDS["shoes"], outfit.shoes.item, outfit.shoes.texture, 0)
+        SetPedPropIndex(ped, COMPONENT_IDS["hat"], outfit.hat.item, outfit.hat.texture, true)
+        success = true
+    end
+    
     if success then
+        DebugPrint('Police outfit applied successfully')
         lib.notify({
             title = "Uniform Applied",
-            description = "Police clothing assigned.",
-            type = "success"
+            description = "Police clothing assigned",
+            type = "success",
+            duration = 5000
         })
-        print("[Client] Police uniform applied.")
     else
+        DebugPrint('All outfit application methods failed')
         lib.notify({
             title = "Uniform Failed",
-            description = "Could not apply police outfit.",
-            type = "error"
+            description = "Could not apply police outfit",
+            type = "error",
+            duration = 5000
         })
-        print("[Client] Failed to apply police uniform.")
     end
-end)
+    
+    isApplyingOutfit = false
+end
 
--- 📦 Manual command to check what was saved
-RegisterCommand("checkSavedAppearance", function()
-    if prevAppearance then
-        lib.notify({
-            title = "Appearance Saved",
-            description = "Civilian clothing data is available.",
-            type = "info"
-        })
-        print("[Client] Civilian Appearance Structure:")
-        print(json.encode(prevAppearance, { indent = true }))
-    else
-        lib.notify({
-            title = "No Data",
-            description = "No civilian outfit captured yet.",
-            type = "error"
-        })
-        print("[Client] No civilian appearance available.")
-    end
+-- Command to test outfit application
+RegisterCommand('testpoliceoutfit', function()
+    TriggerEvent('qbx_policegearcloth:client:ApplyPoliceOutfit')
+    print('Police outfit test triggered')
 end, false)
-
-RegisterNetEvent('player:setJob', function(jobData)
-    local newJob = jobData.name
-    local grade = jobData.grade
-
-    if newJob == "unemployed" and grade == 0 and prevAppearance then
-        exports['illenium-appearance']:setPlayerAppearance(prevAppearance)
-        lib.notify({
-            title = "Back to Civilian",
-            description = "Restored saved clothing from earlier.",
-            type = "info"
-        })
-        print("[Client] Civilian appearance restored.")
-        print(json.encode(prevAppearance, { indent = true }))
-    end
-end)
-

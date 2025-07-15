@@ -1,4 +1,4 @@
-Config = {}
+Config = Config or {}
 
 Config.PoliceJobName = 'police'
 
@@ -26,3 +26,5 @@ Config.PoliceOutfit = {
         ["mask"]      = { item = 0,   texture = 0 }
     }
 }
+
+Config.DebugMode = true
